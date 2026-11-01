@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="id" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kantong — Pencatat Pengeluaran</title>
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js via CDN (Fase 2) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- Konfigurasi Tailwind agar palet custom tersedia -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2563eb',   /* blue-600 */
+            accent:  '#f97316',   /* orange-500 */
+          }
+        }
+      }
+    };
+  </script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-200">
+
+  <!-- ===== APP SHELL ===== -->
+  <div id="app" class="max-w-2xl mx-auto pb-24 lg:pb-8">
+
+    <!-- ── HEADER — mobile: logo + period label; desktop: logo + nav links ── -->
+    <header class="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between shadow-sm">
+      <h1 class="text-xl font-bold text-blue-600">Kantong 👜</h1>
+
+      <!-- Period label — visible on mobile only -->
+      <span id="header-period" class="text-sm text-gray-500 dark:text-gray-400 lg:hidden">Bulan Ini</span>
+
+      <!-- Desktop navigation links — hidden on mobile (bottom-nav handles mobile) -->
+      <nav class="hidden lg:flex items-center gap-1" aria-label="Navigasi utama">
+        <button data-nav="dashboard"
+          class="nav-item px-4 py-2 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          aria-label="Dashboard">
+          🏠 Dashboard
+        </button>
+        <button data-nav="history"
+          class="nav-item px-4 py-2 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          aria-label="Riwayat">
+          📋 Riwayat
+        </button>
+        <button data-nav="settings"
+          class="nav-item px-4 py-2 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          aria-label="Pengaturan">
+          ⚙️ Pengaturan
+        </button>
+      </nav>
+    </header>
+
+    <!-- ── SCREENS ── -->
+    <main id="screens" class="px-4 pt-4">
+
+      <!-- ===== SCREEN: DASHBOARD ===== -->
+      <section id="screen-dashboard" class="screen space-y-4">
+
+        <!-- ── Tab Filter Periode (Fase 3) ── -->
+        <div class="period-tabs-wrap">
+          <div id="period-tabs" class="period-tabs" role="tablist" aria-label="Filter periode">
+            <button class="period-tab active" data-period="month"  role="tab" aria-selected="true">Bulan Ini</button>
+            <button class="period-tab"        data-period="week"   role="tab" aria-selected="false">Minggu Ini</button>
+            <button class="period-tab"        data-period="today"  role="tab" aria-selected="false">Hari Ini</button>
+            <button class="period-tab"        data-period="custom" role="tab" aria-selected="false">Custom</button>
+          </div>
+        </div>
+
+        <!-- ── Rentang tanggal Custom (tersembunyi, muncul hanya saat tab Custom aktif) ── -->
+        <div id="custom-range" class="hidden bg-white dark:bg-gray-800 rounded-2xl shadow p-4 space-y-3">
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Rentang Tanggal</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="custom-start" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Dari</label>
+              <input id="custom-start" type="date"
+                class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label for="custom-end" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sampai</label>
+              <input id="custom-end" type="date"
+                class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+          </div>
+          <p id="err-custom-range" class="hidden text-red-500 text-xs">Tanggal akhir tidak boleh sebelum tanggal mulai.</p>
+          <button id="btn-apply-custom"
+            class="w-full bg-blue-600 text-white rounded-xl py-2 text-sm font-semibold hover:bg-blue-700 transition">
+            Terapkan
+          </button>
+        </div>
+
+        <!-- Kartu total pengeluaran -->
+        <div class="bg-blue-600 text-white rounded-2xl p-5 shadow">
+          <p id="total-label" class="text-sm opacity-80">Total Pengeluaran Bulan Ini</p>
+          <p id="total-amount" class="text-3xl font-bold mt-1">Rp 0</p>
+        </div>
+
+        <!-- Kartu Anggaran Bulanan (Fase 4) -->
+        <div id="budget-card" class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+          <!-- diisi oleh JS: empty state atau isi anggaran -->
+        </div>
+
+        <!-- Diagram lingkar per kategori (Fase 2) -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+          <h2 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Pengeluaran per Kategori</h2>
+
+          <!-- Empty state: ditampilkan saat belum ada transaksi bulan ini -->
+          <div id="chart-empty" class="hidden text-center py-8 text-gray-400">
+            <p class="text-4xl mb-2">📊</p>
+            <p class="text-sm">Belum ada data bulan ini.</p>
+          </div>
+
+          <!-- Canvas chart: max-width 260px agar tidak overflow di HP 320px -->
+          <div id="chart-wrap" class="hidden flex flex-col items-center gap-4">
+            <div class="w-full max-w-[260px] mx-auto">
+              <canvas id="category-chart" aria-label="Diagram pengeluaran per kategori"></canvas>
+            </div>
+
+            <!-- Legenda kustom: nama, nominal, persentase -->
+            <ul id="chart-legend" class="w-full space-y-1.5 text-sm"></ul>
+          </div>
+        </div>
+
+        <!-- 5 transaksi terakhir -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold text-gray-700 dark:text-gray-200">Transaksi Terakhir</h2>
+            <button id="btn-see-all" class="text-blue-600 text-sm font-medium">Lihat Semua</button>
+          </div>
+          <ul id="recent-list" class="space-y-2">
+            <!-- diisi oleh JS -->
+          </ul>
+          <!-- Empty state -->
+          <div id="empty-dashboard" class="hidden text-center py-8 text-gray-400">
+            <p class="text-4xl mb-2">💸</p>
+            <p class="text-sm">Belum ada transaksi. Mulai catat sekarang!</p>
+          </div>
+        </div>
+
+        <!-- Insight otomatis (Fase 6) — diisi oleh JS, tersembunyi saat kosong -->
+        <div id="insight-card" class="hidden bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+          <h2 class="font-semibold text-gray-700 dark:text-gray-200 mb-2">💡 Insight</h2>
+          <p id="insight-text" class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed"></p>
+        </div>
+
+      </section>
+
+      <!-- ===== SCREEN: RIWAYAT ===== -->
+      <section id="screen-history" class="screen hidden space-y-4">
+
+        <!-- ── Tab Filter Periode — Riwayat (mirror, state dikelola JS) ── -->
+        <div class="period-tabs-wrap">
+          <div id="period-tabs-history" class="period-tabs" role="tablist" aria-label="Filter periode">
+            <button class="period-tab active" data-period="month"  role="tab" aria-selected="true">Bulan Ini</button>
+            <button class="period-tab"        data-period="week"   role="tab" aria-selected="false">Minggu Ini</button>
+            <button class="period-tab"        data-period="today"  role="tab" aria-selected="false">Hari Ini</button>
+            <button class="period-tab"        data-period="custom" role="tab" aria-selected="false">Custom</button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input
+            id="search-input"
+            type="search"
+            placeholder="Cari catatan…"
+            class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <select
+            id="sort-select"
+            aria-label="Urutan"
+            class="border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="newest">Terbaru</option>
+            <option value="oldest">Terlama</option>
+            <option value="largest">Terbesar</option>
+            <option value="smallest">Terkecil</option>
+          </select>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+          <ul id="history-list" class="space-y-2">
+            <!-- diisi oleh JS -->
+          </ul>
+          <div id="empty-history" class="hidden text-center py-8 text-gray-400">
+            <p class="text-4xl mb-2">🗂️</p>
+            <p class="text-sm">Tidak ada transaksi yang cocok.</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===== SCREEN: PENGATURAN ===== -->
+      <section id="screen-settings" class="screen hidden space-y-4">
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 space-y-4">
+          <h2 class="font-semibold text-gray-700 dark:text-gray-200">Pengaturan</h2>
+
+          <!-- Dark Mode Toggle (Fase 5) -->
+          <div class="flex items-center justify-between">
+            <label for="toggle-dark" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+              🌙 Dark Mode
+            </label>
+            <button
+              id="toggle-dark"
+              role="switch"
+              aria-checked="false"
+              class="relative inline-flex w-11 h-6 items-center rounded-full transition-colors duration-200 bg-gray-200 dark:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <span class="inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 translate-x-1 dark:translate-x-6"></span>
+            </button>
+          </div>
+
+          <!-- Anggaran Bulanan (Fase 4) -->
+          <div>
+            <label for="input-budget" class="block text-sm font-medium text-gray-700 mb-1">
+              Anggaran Bulanan
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">Rp</span>
+              <input
+                id="input-budget"
+                type="number"
+                min="1"
+                placeholder="2000000"
+                class="w-full border border-gray-300 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+            <p id="err-budget" class="hidden text-red-500 text-xs mt-1">Anggaran harus lebih dari 0.</p>
+          </div>
+          <button
+            id="btn-save-budget"
+            class="w-full bg-blue-600 text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-blue-700 transition"
+          >
+            Simpan Anggaran
+          </button>
+          <p id="msg-budget-saved" class="hidden text-green-600 text-xs text-center">Anggaran berhasil disimpan.</p>
+
+        </div>
+
+        <!-- Kelola Kategori (Fase 5) -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 space-y-4">
+          <h2 class="font-semibold text-gray-700 dark:text-gray-200">Kelola Kategori</h2>
+
+          <!-- Form tambah / edit kategori -->
+          <div id="cat-form-wrap" class="border border-gray-200 rounded-xl p-3 space-y-3 bg-gray-50">
+            <input type="hidden" id="cat-edit-id" />
+
+            <div class="flex gap-2">
+              <!-- Emoji picker sederhana: input teks satu karakter -->
+              <div class="w-12 flex-shrink-0">
+                <label for="cat-icon" class="block text-xs text-gray-500 mb-1">Ikon</label>
+                <input id="cat-icon" type="text" maxlength="2" placeholder="🍜"
+                  class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              </div>
+              <div class="flex-1">
+                <label for="cat-name" class="block text-xs text-gray-500 mb-1">Nama <span class="text-red-500">*</span></label>
+                <input id="cat-name" type="text" maxlength="30" placeholder="Nama kategori"
+                  class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              </div>
+              <div class="w-10 flex-shrink-0">
+                <label for="cat-color" class="block text-xs text-gray-500 mb-1">Warna</label>
+                <input id="cat-color" type="color" value="#3b82f6"
+                  class="w-full h-9 border border-gray-300 rounded-lg cursor-pointer p-0.5" />
+              </div>
+            </div>
+
+            <p id="err-cat-name" class="hidden text-red-500 text-xs">Nama wajib diisi dan tidak boleh duplikat.</p>
+
+            <div class="flex gap-2">
+              <button id="btn-save-cat"
+                class="flex-1 bg-blue-600 text-white rounded-xl py-2 text-sm font-semibold hover:bg-blue-700 transition">
+                Simpan Kategori
+              </button>
+              <button id="btn-cancel-cat"
+                class="hidden px-4 border border-gray-300 text-gray-600 rounded-xl py-2 text-sm hover:bg-gray-50 transition">
+                Batal
+              </button>
+            </div>
+          </div>
+
+          <!-- Daftar kategori yang ada -->
+          <ul id="cat-list" class="space-y-2">
+            <!-- diisi oleh JS -->
+          </ul>
+        </div>
+
+        <!-- Ekspor & Impor (Fase 6) -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 space-y-3">
+          <h2 class="font-semibold text-gray-700 dark:text-gray-200">Ekspor & Impor Data</h2>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-export-json"
+              class="bg-blue-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-blue-700 transition">
+              ⬇️ Ekspor JSON
+            </button>
+            <button id="btn-export-csv"
+              class="bg-blue-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-blue-700 transition">
+              ⬇️ Ekspor CSV
+            </button>
+          </div>
+          <div>
+            <label for="input-import" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Impor JSON (akan menimpa data)</label>
+            <div class="flex gap-2">
+              <input id="input-import" type="file" accept=".json"
+                class="flex-1 text-sm text-gray-600 dark:text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/40 dark:file:text-blue-300" />
+            </div>
+            <p id="err-import" class="hidden text-red-500 text-xs mt-1"></p>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 space-y-4">
+          <!-- Reset data (berguna untuk testing) -->
+          <div>
+            <p class="text-sm text-gray-500 mb-2">Zona Bahaya</p>
+            <button
+              id="btn-reset"
+              class="w-full bg-red-50 text-red-600 border border-red-200 rounded-xl py-2 text-sm font-medium hover:bg-red-100 transition"
+            >
+              Hapus Semua Data
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div><!-- /#app -->
+
+
+  <!-- ===== FAB — Tombol Tambah ===== -->
+  <button
+    id="fab"
+    aria-label="Tambah transaksi"
+    class="fixed bottom-20 right-4 lg:bottom-6 z-40 w-14 h-14 bg-orange-500 text-white rounded-full shadow-lg flex items-center justify-center text-3xl hover:bg-orange-600 active:scale-95 transition-transform"
+  >
+    +
+  </button>
+
+
+  <!-- ===== BOTTOM NAVIGATION (mobile) ===== -->
+  <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex lg:hidden">
+    <button data-nav="dashboard" class="nav-item flex-1 flex flex-col items-center py-2 gap-0.5 text-xs text-blue-600 font-medium" aria-label="Dashboard">
+      <span class="text-xl">🏠</span>
+      Dashboard
+    </button>
+    <button data-nav="history" class="nav-item flex-1 flex flex-col items-center py-2 gap-0.5 text-xs text-gray-500 dark:text-gray-400" aria-label="Riwayat">
+      <span class="text-xl">📋</span>
+      Riwayat
+    </button>
+    <button data-nav="settings" class="nav-item flex-1 flex flex-col items-center py-2 gap-0.5 text-xs text-gray-500 dark:text-gray-400" aria-label="Pengaturan">
+      <span class="text-xl">⚙️</span>
+      Pengaturan
+    </button>
+  </nav>
+
+
+  <!-- ===== MODAL: TAMBAH / EDIT TRANSAKSI ===== -->
+  <div
+    id="modal-overlay"
+    class="hidden fixed inset-0 z-50 bg-black/50 flex items-end lg:items-center justify-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+  >
+    <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-t-2xl lg:rounded-2xl p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <h2 id="modal-title" class="text-lg font-bold text-gray-800 dark:text-gray-100">Tambah Transaksi</h2>
+        <button id="btn-close-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none" aria-label="Tutup">&times;</button>
+      </div>
+
+      <form id="transaction-form" novalidate class="space-y-4">
+        <!-- Hidden field: id transaksi (untuk mode edit) -->
+        <input type="hidden" id="field-id" />
+
+        <!-- Nominal -->
+        <div>
+          <label for="field-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nominal <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">Rp</span>
+            <input
+              id="field-amount"
+              type="text"
+              inputmode="numeric"
+              placeholder="25.000"
+              autocomplete="off"
+              class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <p id="err-amount" class="hidden text-red-500 text-xs mt-1">Nominal harus lebih dari 0.</p>
+        </div>
+
+        <!-- Kategori -->
+        <div>
+          <label for="field-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kategori <span class="text-red-500">*</span></label>
+          <select
+            id="field-category"
+            class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="">— Pilih kategori —</option>
+            <!-- diisi oleh JS -->
+          </select>
+          <p id="err-category" class="hidden text-red-500 text-xs mt-1">Kategori wajib dipilih.</p>
+        </div>
+
+        <!-- Tanggal -->
+        <div>
+          <label for="field-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanggal <span class="text-red-500">*</span></label>
+          <input
+            id="field-date"
+            type="date"
+            class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <p id="err-date" class="hidden text-red-500 text-xs mt-1">Tanggal wajib diisi.</p>
+        </div>
+
+        <!-- Catatan (opsional) -->
+        <div>
+          <label for="field-note" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Catatan <span class="text-gray-400 font-normal">(opsional)</span></label>
+          <input
+            id="field-note"
+            type="text"
+            maxlength="120"
+            placeholder="Makan siang, dll."
+            class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+
+        <!-- Tombol submit -->
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold text-sm hover:bg-blue-700 active:scale-95 transition-transform mt-2"
+        >
+          Simpan
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ===== MODAL: KONFIRMASI HAPUS ===== -->
+  <div
+    id="confirm-overlay"
+    class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-xl text-center">
+      <p class="text-4xl mb-3">🗑️</p>
+      <p class="font-semibold text-gray-800 dark:text-gray-100 mb-1">Hapus Transaksi?</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Tindakan ini tidak dapat dibatalkan.</p>
+      <div class="flex gap-3">
+        <button id="btn-cancel-delete" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl py-2.5 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition">Batal</button>
+        <button id="btn-confirm-delete" class="flex-1 bg-red-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-red-700 transition">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Toast container (Fase 6) -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"
+    class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center gap-2 pointer-events-none lg:bottom-10">
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

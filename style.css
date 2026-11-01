@@ -1,0 +1,189 @@
+/*
+ * style.css — Kantong
+ * Hanya berisi styling tambahan yang tidak praktis ditulis dengan Tailwind:
+ *  - custom scrollbar ringan
+ *  - min-height area sentuh FAB yang sudah ditangani di HTML
+ *  - animasi modal slide-up (bottom sheet)
+ *  - safe-area inset untuk iPhone notch/home bar
+ *  - override input[type=date] agar konsisten lintas browser
+ */
+
+/* ── Safe-area padding untuk iPhone (notch / home indicator) ── */
+#bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.fab-wrap {
+  bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── Animasi bottom-sheet (modal muncul dari bawah di mobile) ── */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Kelas .slide-up ditambah oleh JS saat modal dibuka */
+#modal-overlay > div {
+  animation: slideUp 0.22s ease-out;
+}
+
+/* Di desktop modal tidak perlu slide-up */
+@media (min-width: 1024px) {
+  #modal-overlay > div {
+    animation: none;
+  }
+}
+
+/* ── Input date — pastikan tinggi sama dengan input lain ── */
+input[type="date"] {
+  /* Hapus kalender bawaan yang kadang menekan layout di beberapa browser */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ── Scrollbar ringan di desktop ── */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar        { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track  { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb  { background: #cbd5e1; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+}
+
+/* ── Item transaksi: area sentuh minimal 44px ── */
+.transaction-item {
+  min-height: 44px;
+}
+
+/* ── Active nav item indicator ── */
+.nav-item.active {
+  color: #2563eb; /* blue-600 */
+}
+
+.nav-item.active span {
+  transform: scale(1.15);
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+/* Desktop header nav: active item gets a filled blue pill */
+header nav .nav-item.active {
+  background: #eff6ff;        /* blue-50  */
+  color: #2563eb;             /* blue-600 */
+  font-weight: 600;
+}
+
+.dark header nav .nav-item.active {
+  background: #1e3a5f;
+  color: #93c5fd;             /* blue-300 */
+}
+
+/* ── Period filter tabs (Fase 3) ── */
+
+/* Wrapper: clip overflow tanpa membuat halaman scroll horizontal */
+.period-tabs-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Sembunyikan scrollbar agar tampil bersih */
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
+.period-tabs-wrap::-webkit-scrollbar { display: none; }
+
+/* Row tab: jangan wrap, satu baris penuh */
+.period-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 0.25rem 0.5rem;
+  min-width: max-content;         /* paksa satu baris, parent yang scroll */
+}
+
+/* Setiap tombol tab */
+.period-tab {
+  white-space: nowrap;
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;     /* gray-200 */
+  background: #ffffff;
+  color: #6b7280;                 /* gray-500 */
+  font-size: 0.8125rem;           /* ~13px */
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  min-height: 36px;               /* area sentuh cukup */
+}
+
+.period-tab:hover {
+  background: #eff6ff;            /* blue-50 */
+  border-color: #93c5fd;          /* blue-300 */
+  color: #2563eb;
+}
+
+.period-tab.active {
+  background: #2563eb;            /* blue-600 */
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ── Dark mode overrides ── */
+.dark .period-tab {
+  background: #1f2937;            /* gray-800 */
+  border-color: #374151;          /* gray-700 */
+  color: #9ca3af;                 /* gray-400 */
+}
+
+.dark .period-tab:hover {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+  color: #93c5fd;
+}
+
+.dark .period-tab.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+/* cat-form-wrap dark */
+.dark #cat-form-wrap {
+  background: #111827;            /* gray-900 */
+  border-color: #374151;
+}
+
+/* ── Toast notification (Fase 6) ── */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0)   scale(1);    }
+  to   { opacity: 0; transform: translateY(8px) scale(0.96); }
+}
+
+.toast {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: #1f2937;    /* gray-800 */
+  color: #f9fafb;         /* gray-50  */
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  animation: toastIn 0.2s ease-out;
+}
+
+.toast.leaving {
+  animation: toastOut 0.2s ease-in forwards;
+}
+
+/* ── Focus-visible ring — keyboard navigation ── */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Remove default outline only when not keyboard-navigating */
+:focus:not(:focus-visible) {
+  outline: none;
+}

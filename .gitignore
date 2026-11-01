@@ -1,0 +1,13 @@
+﻿# Editor
+.vscode/
+
+# PDF artefak pengujian (tidak masuk repo)
+Screenshot Playground - Hasil Pengujian.pdf
+Screenshot Prompt pada IBM Bob.pdf
+
+# Bob task file (auto-generated)
+bob-task-*.md
+
+# OS
+.DS_Store
+Thumbs.db
