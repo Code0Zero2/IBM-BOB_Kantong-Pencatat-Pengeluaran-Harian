@@ -31,7 +31,7 @@
 - Card dengan rounded corner (`rounded-2xl`), soft shadow, hover effect, transisi halus.
 - Mobile-first: satu kolom di HP, dua kolom di layar `lg`. Tidak boleh ada scroll horizontal pada lebar 320px.
 - Area sentuh minimal 44x44px. Tombol tambah mengambang (FAB) di kanan bawah.
-- Navigasi: bottom navigation di HP (Dashboard, Riwayat, Pengaturan); di desktop wajib berupa navbar atas di layar lg ke atas; bottom navigation hanya tampil di bawah lg.
+- Navigasi: bottom navigation di HP (Dashboard, Riwayat, Pengaturan); di desktop boleh berupa navbar atas.
 - Form tambah/edit tampil sebagai modal / bottom sheet.
 - Sediakan empty state yang ramah saat belum ada data.
 
@@ -68,15 +68,42 @@ Kategori bawaan: Makan, Transport, Belanja, Hiburan, Tagihan, Kesehatan, Lainnya
 
 ## 7. Roadmap (Kerjakan Per Fase)
 
-### Fase 1 — Fondasi : Selesai 
+### Fase 1 — Fondasi
+- Struktur 3 file, layout responsif, bottom navigation, FAB.
+- CRUD transaksi (tambah, lihat, edit, hapus dengan konfirmasi).
+- Validasi form (nominal > 0, kategori dan tanggal wajib).
+- Simpan dan muat dari `localStorage`.
+- Daftar transaksi terbaru di Dashboard.
 
-### Fase 2 — Diagram Lingkar : Selesai HP.
+**Selesai jika:** data tetap ada setelah refresh; tampilan rapi di lebar 360px dan 1280px.
 
-### Fase 3 — Filter Periode : Selesai 
+### Fase 2 — Diagram Lingkar
+- Diagram lingkar (doughnut/pie) pengeluaran per kategori memakai Chart.js.
+- Legenda dengan warna kategori, nominal, dan persentase.
+- Diagram ter-update otomatis saat transaksi ditambah/diubah/dihapus.
+- Empty state saat belum ada data.
 
-### Fase 4 — Anggaran Bulanan : Selesai 
+**Selesai jika:** diagram berubah tanpa refresh dan tidak overflow di HP.
 
-### Fase 5 — Kustomisasi & Kenyamanan : Selesai 
+### Fase 3 — Filter Periode
+- Tab filter: Hari Ini, Minggu Ini, Bulan Ini, Custom (rentang tanggal).
+- Total, diagram, dan daftar transaksi mengikuti filter yang aktif.
+- Tampilkan jumlah transaksi pada tiap tab bila relevan.
+
+**Selesai jika:** semua tampilan konsisten mengikuti periode terpilih.
+
+### Fase 4 — Anggaran Bulanan
+- Input anggaran bulanan di Pengaturan.
+- Kartu anggaran: terpakai, sisa, progress bar.
+- Warna progress: biru (< 70%), oranye (70–99%), merah (≥ 100%).
+
+**Selesai jika:** progress bar dan warna berubah sesuai total pengeluaran bulan berjalan.
+
+### Fase 5 — Kustomisasi & Kenyamanan
+- Kategori kustom (tambah, ubah, hapus; pilih warna dan ikon). Kategori yang dipakai transaksi tidak boleh dihapus tanpa peringatan atau pemindahan.
+- Format Rupiah otomatis saat mengetik nominal.
+- Pencarian dan sortir (terbaru, terlama, terbesar).
+- Dark mode dengan toggle, preferensi tersimpan.
 
 ### Fase 6 — Polishing & Nilai Plus
 - Ekspor/impor data (JSON, dan CSV untuk ekspor).
